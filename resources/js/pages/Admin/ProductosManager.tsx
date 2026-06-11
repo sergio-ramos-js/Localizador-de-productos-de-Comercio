@@ -23,29 +23,59 @@ export default function ProductosManager({ productos, gondolas }: Props) {
     const [nombre, setNombre] = useState('');
     const [codigoBarras, setCodigoBarras] = useState('');
     const [gondolaId, setGondolaId] = useState('');
+    
+    // 🔄 Estado para controlar si estamos editando un producto existente
+    const [editandoId, setEditandoId] = useState<number | null>(null);
+
+    // 🔄 Cambiar al modo edición rellenando el formulario de la izquierda
+    const activarEdicion = (prod: Producto) => {
+        setEditandoId(prod.id);
+        setNombre(prod.nombre);
+        setCodigoBarras(prod.codigo_barras || '');
+        setGondolaId(prod.gondola_id ? String(prod.gondola_id) : '');
+    };
+
+    // 🔄 Limpiar formulario y salir del modo edición
+    const limpiarFormulario = () => {
+        setNombre('');
+        setCodigoBarras('');
+        setGondolaId('');
+        setEditandoId(null);
+    };
 
     const guardarProducto = (e: React.FormEvent) => {
         e.preventDefault();
         if (!nombre.trim()) return;
 
-        router.post('/admin/productos', {
+        const payload = {
             nombre: nombre,
             codigo_barras: codigoBarras || null,
             gondola_id: gondolaId || null
-        }, {
-            preserveScroll: true,
-            onSuccess: () => {
-                setNombre('');
-                setCodigoBarras('');
-                setGondolaId('');
-            }
-        });
+        };
+
+        if (editandoId) {
+            // 🔄 Si hay un ID en memoria, hacemos un PUT para ACTUALIZAR
+            router.put(`/admin/productos/${editandoId}`, payload, {
+                preserveScroll: true,
+                onSuccess: () => limpiarFormulario()
+            });
+        } {
+            // Si no estamos editando, se comporta como un POST tradicional (Crear)
+            router.post('/admin/productos', payload, {
+                preserveScroll: true,
+                onSuccess: () => limpiarFormulario()
+            });
+        }
     };
 
     const eliminarProducto = (id: number) => {
         if (confirm('¿Deseas eliminar este artículo permanentemente?')) {
             router.delete(`/admin/productos/${id}`, {
-                preserveScroll: true
+                preserveScroll: true,
+                onSuccess: () => {
+                    // Si justo borran el que se estaba editando, limpiamos el panel
+                    if (editandoId === id) limpiarFormulario();
+                }
             });
         }
     };
@@ -56,10 +86,13 @@ export default function ProductosManager({ productos, gondolas }: Props) {
 
             <div className="w-full max-w-4xl bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-700 flex flex-col md:flex-row gap-6">
                 
-                {/* Formulario Izquierdo */}
+                {/* Formulario Izquierdo (Mutación Dinámica) */}
                 <div className="w-full md:w-1/3 bg-slate-850 p-4 rounded-xl border border-slate-700 flex flex-col justify-between">
                     <form onSubmit={guardarProducto}>
-                        <h2 className="text-xl font-bold text-white mb-4">Cargar Artículo</h2>
+                        {/* 🔄 Título reactivo según el modo */}
+                        <h2 className="text-xl font-bold text-white mb-4">
+                            {editandoId ? '📝 Editar Artículo' : 'Cargar Artículo'}
+                        </h2>
 
                         {/* Input Nombre */}
                         <div className="mb-3">
@@ -76,7 +109,7 @@ export default function ProductosManager({ productos, gondolas }: Props) {
                         </div>
 
                         {/* Input Código de Barras */}
-                        <div className="mb-3">
+                        {/* <div className="mb-3">
                             <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
                                 Código de Barras (Opcional)
                             </label>
@@ -87,7 +120,7 @@ export default function ProductosManager({ productos, gondolas }: Props) {
                                 placeholder="Ej: 779123456789"
                                 className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-500"
                             />
-                        </div>
+                        </div> */}
 
                         {/* Selector Pasillo */}
                         <div className="mb-5">
@@ -99,7 +132,7 @@ export default function ProductosManager({ productos, gondolas }: Props) {
                                 onChange={(e) => setGondolaId(e.target.value)}
                                 className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-sm text-white focus:outline-none focus:border-sky-500 cursor-pointer"
                             >
-                                <option value="">-- Sin asignar / En depósito --</option>
+                                <option value="">-- Sin asignar --</option>
                                 {gondolas.map((g) => (
                                     <option key={g.id} value={g.id} className="bg-slate-850">
                                         {g.nombre}
@@ -108,12 +141,28 @@ export default function ProductosManager({ productos, gondolas }: Props) {
                             </select>
                         </div>
 
-                        <button
-                            type="submit"
-                            className="w-full py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold text-sm rounded-lg transition-colors"
-                        >
-                            ➕ Registrar Producto
-                        </button>
+                        <div className="flex flex-col gap-2">
+                            {/* 🔄 Botón de acción principal con color e icono dinámico */}
+                            <button
+                                type="submit"
+                                className={`w-full py-2 text-white font-bold text-sm rounded-lg transition-colors ${
+                                    editandoId ? 'bg-amber-600 hover:bg-amber-500' : 'bg-sky-600 hover:bg-sky-500'
+                                }`}
+                            >
+                                {editandoId ? '💾 Guardar Cambios' : '➕ Registrar Producto'}
+                            </button>
+
+                            {/* 🔄 Botón condicional para salir de la edición */}
+                            {editandoId && (
+                                <button
+                                    type="button"
+                                    onClick={limpiarFormulario}
+                                    className="w-full py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold rounded-lg transition-colors"
+                                >
+                                    Cancelar Edición
+                                </button>
+                            )}
+                        </div>
                     </form>
                     
                     <div className="text-xs text-slate-500 text-center pt-3 border-t border-slate-700 mt-4">
@@ -132,7 +181,9 @@ export default function ProductosManager({ productos, gondolas }: Props) {
                             {productos.map((prod) => (
                                 <div 
                                     key={prod.id} 
-                                    className="flex justify-between items-center p-3 bg-slate-900 rounded-lg border border-slate-700 hover:border-slate-600 transition-all"
+                                    className={`flex justify-between items-center p-3 bg-slate-900 rounded-lg border transition-all ${
+                                        editandoId === prod.id ? 'border-amber-500 shadow-md shadow-amber-500/10' : 'border-slate-700 hover:border-slate-600'
+                                    }`}
                                 >
                                     <div>
                                         <p className="text-sm font-semibold text-white">{prod.nombre}</p>
@@ -147,12 +198,26 @@ export default function ProductosManager({ productos, gondolas }: Props) {
                                             )}
                                         </div>
                                     </div>
-                                    <button
-                                        onClick={() => eliminarProducto(prod.id)}
-                                        className="text-slate-500 hover:text-rose-400 p-1 text-sm transition-colors"
-                                    >
-                                        🗑️
-                                    </button>
+                                    
+                                    {/* 🔄 Contenedor de acciones (Editar y Eliminar) */}
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            onClick={() => activarEdicion(prod)}
+                                            title="Editar producto"
+                                            className={`p-1.5 text-xs rounded transition-colors ${
+                                                editandoId === prod.id ? 'text-amber-400 bg-slate-800' : 'text-slate-400 hover:text-amber-400'
+                                            }`}
+                                        >
+                                            ✏️
+                                        </button>
+                                        <button
+                                            onClick={() => eliminarProducto(prod.id)}
+                                            title="Eliminar producto"
+                                            className="text-slate-500 hover:text-rose-400 p-1.5 text-xs transition-colors"
+                                        >
+                                            🗑️
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
                         </div>

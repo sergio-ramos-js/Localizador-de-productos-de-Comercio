@@ -326,7 +326,8 @@ export default function MapaDesigner({ gondolasIniciales }: Props) {
         }, {
             onSuccess: () => {
                 setNuevoNombre('');
-                setNuevoColor('#475569'); // Reseteamos al gris por defecto
+                // 💡 QUITAMOS el reset de color para mantener en memoria el último usado.
+                // Si creás muchas seguidas, ya se quedan con el mismo tono.
             },
             preserveScroll: true
         });
@@ -344,12 +345,11 @@ export default function MapaDesigner({ gondolasIniciales }: Props) {
                         <h2 className="text-xl font-bold text-white mb-4">Herramientas</h2>
 
                         {/* Formulario de creación */}
-                        {/* Formulario de creación mejorado */}
                         <form onSubmit={agregarGondola} className="mb-6">
                             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
                                 Nueva Góndola / Sector
                             </label>
-                            <div className="flex gap-2 items-stretch"> {/* items-stretch para que todos tengan la misma altura */}
+                            <div className="flex gap-2 items-stretch mb-3"> {/* items-stretch para que todos tengan la misma altura */}
                                 <input
                                     type="text"
                                     value={nuevoNombre}
@@ -365,7 +365,7 @@ export default function MapaDesigner({ gondolasIniciales }: Props) {
                                         value={nuevoColor}
                                         onChange={(e) => setNuevoColor(e.target.value)}
                                         className="w-7 h-7 cursor-pointer border-0 rounded bg-transparent outline-none"
-                                        title="Elegir color"
+                                        title="Elegir color personalizado"
                                     />
                                 </div>
 
@@ -375,6 +375,32 @@ export default function MapaDesigner({ gondolasIniciales }: Props) {
                                 >
                                     +
                                 </button>
+                            </div>
+
+                            {/* 🎯 Paleta de colores rápidos con los tonos de tu sistema */}
+                            <div className="flex items-center gap-2 px-1">
+                                <span className="text-[11px] text-slate-500 font-medium">Colores rápidos:</span>
+                                <div className="flex gap-1.5">
+                                    {[
+                                        { hex: '#475569', label: 'Góndola' },
+                                        { hex: '#3fc23d', label: 'Entrada' },
+                                        { hex: '#c91d25', label: 'Salida' },
+                                        { hex: '#1b62c5', label: 'Cajas' },
+                                        { hex: '#bcb134', label: 'Baño' }
+                                    ].map((preset) => (
+                                        <button
+                                            key={preset.hex}
+                                            type="button"
+                                            onClick={() => setNuevoColor(preset.hex)}
+                                            title={preset.label}
+                                            className={`w-5 h-5 rounded-full border transition-all ${nuevoColor.toLowerCase() === preset.hex.toLowerCase()
+                                                    ? 'border-white scale-110 shadow-lg shadow-black/50'
+                                                    : 'border-slate-700 hover:scale-105'
+                                                }`}
+                                            style={{ backgroundColor: preset.hex }}
+                                        />
+                                    ))}
+                                </div>
                             </div>
                         </form>
 
@@ -513,7 +539,7 @@ export default function MapaDesigner({ gondolasIniciales }: Props) {
                                 })}
                             </g>
                         </svg>
-                        {/* 🎯 BOTÓN FLOTANTE DE ENFOQUE AUTOMÁTICO */}
+                        {/* 🎯 BOTÓN FLOTANTE CENTRAR VISTA */}
                         <button
                             onClick={autoAjustarMapa}
                             className="absolute bottom-4 right-4 bg-slate-800 hover:bg-slate-700 text-white p-2.5 rounded-lg shadow-lg border border-slate-600 transition-all active:scale-95 flex items-center justify-center gap-2 text-xs font-medium z-10"

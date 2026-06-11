@@ -46,4 +46,25 @@ class ProductoController extends Controller
 
         return redirect()->back();
     }
+
+    // 🔄 Actualizar la información de un producto (Cambio de góndola, nombre, etc.)
+    public function update(Request $request, $id)
+    {
+        $producto = Producto::findOrFail($id);
+
+        $request->validate([
+            'nombre' => 'required|string|max:100',
+            'codigo_barras' => 'nullable|string|max:50',
+            'gondola_id' => 'nullable|exists:gondolas,id',
+        ]);
+
+        // Actualizamos el registro usando fillable
+        $producto->update([
+            'nombre' => $request->nombre,
+            'codigo_barras' => $request->codigo_barras,
+            'gondola_id' => $request->gondola_id ?: null // Mantenemos tu misma lógica para nulos
+        ]);
+
+        return redirect()->back(); // Inertia refresca el listado automáticamente
+    }
 }

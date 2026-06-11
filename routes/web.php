@@ -22,6 +22,7 @@ Route::delete('/admin/gondolas/{id}', [GondolaController::class, 'destroy'])->na
 Route::get('/admin/productos', [ProductoController::class, 'index'])->name('productos.index');
 Route::post('/admin/productos', [ProductoController::class, 'store'])->name('productos.store');
 Route::delete('/admin/productos/{id}', [ProductoController::class, 'destroy'])->name('productos.destroy');
+Route::put('/admin/productos/{id}', [ProductoController::class, 'update']);
 
 // Ruta generador de QR
 Route::get('/admin/qr', function () {

@@ -21,5 +21,13 @@ class DatabaseSeeder extends Seeder
             'name' => 'Test User',
             'email' => 'test@example.com',
         ]);
+
+        // 🔥 Solo inyecta productos de prueba si estás en tu PC local/desarrollo
+        if (app()->environment('local', 'testing')) {
+            $this->call([
+                GondolaSeeder::class,
+                ProductSeeder::class,
+            ]);
+        }
     }
 }
