@@ -1,7 +1,5 @@
 import { Head, router } from '@inertiajs/react';
-import React, { useState } from 'react';
-import { dashboard } from '@/routes';
-// import Dashboard from '../dashboard';
+import React, { useMemo, useState } from 'react';
 
 
 interface Gondola {
@@ -12,7 +10,6 @@ interface Gondola {
 interface Producto {
     id: number;
     nombre: string;
-    codigo_barras?: string | null;
     gondola_id?: number | null;
     gondola?: Gondola | null;
 }
@@ -24,7 +21,6 @@ interface Props {
 
 export default function ProductosManager({ productos, gondolas }: Props) {
     const [nombre, setNombre] = useState('');
-    const [codigoBarras, setCodigoBarras] = useState('');
     const [gondolaId, setGondolaId] = useState('');
 
     // 🔍 NUEVO: Estado para el buscador en tiempo real
@@ -37,14 +33,12 @@ export default function ProductosManager({ productos, gondolas }: Props) {
     const activarEdicion = (prod: Producto) => {
         setEditandoId(prod.id);
         setNombre(prod.nombre);
-        setCodigoBarras(prod.codigo_barras || '');
         setGondolaId(prod.gondola_id ? String(prod.gondola_id) : '');
     };
 
     // 🔄 Limpiar formulario y salir del modo edición
     const limpiarFormulario = () => {
         setNombre('');
-        setCodigoBarras('');
         setGondolaId('');
         setEditandoId(null);
     };
@@ -55,8 +49,7 @@ export default function ProductosManager({ productos, gondolas }: Props) {
 
         const payload = {
             nombre: nombre,
-            codigo_barras: codigoBarras || null,
-            gondola_id: gondolaId || null
+            gondola_id: gondolaId || null,
         };
 
         if (editandoId) {
@@ -86,19 +79,84 @@ export default function ProductosManager({ productos, gondolas }: Props) {
         }
     };
 
-    // 🔍 Filtrado inteligente (Ignora mayúsculas, minúsculas y ESPACIOS de más)
-    const productosFiltrados = productos.filter((prod) => {
-        // .trim() borra los espacios fantasma del principio y del final antes de buscar
-        const busquedaLower = filtro.trim().toLowerCase();
+    const busquedaNormalizada = filtro.trim().toLowerCase();
 
-        // Si el usuario solo escribió espacios, mostramos toda la lista
-        if (!busquedaLower) return true;
+    const gondolasCoincidentes = useMemo(() => {
+        if (!busquedaNormalizada) return [];
+        return gondolas.filter((g) => g.nombre.toLowerCase().includes(busquedaNormalizada));
+    }, [busquedaNormalizada, gondolas]);
 
-        const coincideNombre = prod.nombre.toLowerCase().includes(busquedaLower);
-        const coincideCodigo = prod.codigo_barras?.toLowerCase().includes(busquedaLower) || false;
+    const idsGondolasCoincidentes = useMemo(
+        () => new Set(gondolasCoincidentes.map((g) => g.id)),
+        [gondolasCoincidentes],
+    );
 
-        return coincideNombre || coincideCodigo;
-    });
+    const productosFiltrados = useMemo(() => {
+        if (!busquedaNormalizada) return productos;
+
+        return productos.filter((prod) => {
+            const coincideNombre = prod.nombre.toLowerCase().includes(busquedaNormalizada);
+            const coincideGondola = prod.gondola?.nombre?.toLowerCase().includes(busquedaNormalizada) ?? false;
+            const perteneceAGondola = prod.gondola_id != null && idsGondolasCoincidentes.has(prod.gondola_id);
+
+            return coincideNombre || coincideGondola || perteneceAGondola;
+        });
+    }, [busquedaNormalizada, productos, idsGondolasCoincidentes]);
+
+    const productosPorGondola = useMemo(() => {
+        if (!busquedaNormalizada || gondolasCoincidentes.length === 0) return null;
+
+        const grupos = new Map<string, Producto[]>();
+
+        for (const prod of productosFiltrados) {
+            const clave = prod.gondola?.nombre ?? 'Sin góndola / Depósito';
+            const lista = grupos.get(clave) ?? [];
+            lista.push(prod);
+            grupos.set(clave, lista);
+        }
+
+        return Array.from(grupos.entries())
+            .sort(([a], [b]) => a.localeCompare(b, 'es'))
+            .map(([nombreGondola, items]) => ({
+                nombreGondola,
+                items: [...items].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')),
+            }));
+    }, [busquedaNormalizada, gondolasCoincidentes.length, productosFiltrados]);
+
+    const renderProducto = (prod: Producto) => (
+        <div
+            key={prod.id}
+            className={`flex justify-between items-center p-3 bg-slate-900 rounded-lg border transition-all ${editandoId === prod.id ? 'border-amber-500 shadow-md shadow-amber-500/10' : 'border-slate-700 hover:border-slate-600'
+                }`}
+        >
+            <div>
+                <p className="text-sm font-semibold text-white">{prod.nombre}</p>
+                <div className="flex gap-2 mt-1 items-center">
+                    <span className="text-[10px] px-2 py-0.5 bg-slate-800 text-sky-400 border border-sky-900/40 rounded-full font-medium">
+                        📍 {prod.gondola?.nombre || 'Sin góndola / Depósito'}
+                    </span>
+                </div>
+            </div>
+
+            <div className="flex items-center gap-1">
+                <button
+                    onClick={() => activarEdicion(prod)}
+                    title="Editar producto"
+                    className={`cursor-pointer p-1.5 text-xs rounded transition-colors ${editandoId === prod.id ? 'text-amber-400 bg-slate-800' : 'text-slate-400 hover:text-amber-400'
+                        }`}
+                >
+                    ✏️
+                </button>
+                <button
+                    onClick={() => eliminarProducto(prod.id)}
+                    title="Eliminar producto"
+                    className="cursor-pointer text-slate-500 hover:text-rose-400 p-1.5 text-xs transition-colors"
+                >
+                    🗑️
+                </button>
+            </div>
+        </div>
+    );
 
     return (
 
@@ -181,15 +239,16 @@ export default function ProductosManager({ productos, gondolas }: Props) {
                     {/* Listado de Artículos Derecho */}
                     <div className="flex-1 bg-slate-850 p-4 rounded-xl border border-slate-700 flex flex-col">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-                            <h2 className="text-xl font-bold text-white">Stock Registrado ({productos.length})</h2>
+                            <h2 className="text-xl font-bold text-white">
+                                Stock Registrado ({busquedaNormalizada ? productosFiltrados.length : productos.length})
+                            </h2>
 
-                            {/* 🔍 NUEVO: Input del Buscador */}
                             <div className="relative w-full sm:w-64">
                                 <input
                                     type="text"
                                     value={filtro}
                                     onChange={(e) => setFiltro(e.target.value)}
-                                    placeholder="🔍 Buscar por nombre o ID..."
+                                    placeholder="🔍 Buscar por nombre o góndola..."
                                     className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500"
                                 />
                                 {filtro && (
@@ -210,49 +269,22 @@ export default function ProductosManager({ productos, gondolas }: Props) {
                             <p className="text-sm text-slate-500 italic py-8 text-center">
                                 No se encontraron productos que coincidan con "{filtro}".
                             </p>
-                        ) : (
-                            <div className="max-h-[400px] overflow-y-auto pr-2 space-y-2">
-                                {/* 🔍 AHORA MAPEAMOS LA LISTA FILTRADA */}
-                                {productosFiltrados.map((prod) => (
-                                    <div
-                                        key={prod.id}
-                                        className={`flex justify-between items-center p-3 bg-slate-900 rounded-lg border transition-all ${editandoId === prod.id ? 'border-amber-500 shadow-md shadow-amber-500/10' : 'border-slate-700 hover:border-slate-600'
-                                            }`}
-                                    >
-                                        <div>
-                                            <p className="text-sm font-semibold text-white">{prod.nombre}</p>
-                                            <div className="flex gap-2 mt-1 items-center">
-                                                <span className="text-[10px] px-2 py-0.5 bg-slate-800 text-sky-400 border border-sky-900/40 rounded-full font-medium">
-                                                    📍 {prod.gondola?.nombre || 'Sin góndola / Depósito'}
-                                                </span>
-                                                {prod.codigo_barras && (
-                                                    <span className="text-[10px] text-slate-400 italic">
-                                                        🆔 {prod.codigo_barras}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* 🔄 Contenedor de acciones (Editar y Eliminar) */}
-                                        <div className="flex items-center gap-1">
-                                            <button
-                                                onClick={() => activarEdicion(prod)}
-                                                title="Editar producto"
-                                                className={`cursor-pointer p-1.5 text-xs rounded transition-colors ${editandoId === prod.id ? 'text-amber-400 bg-slate-800' : 'text-slate-400 hover:text-amber-400'
-                                                    }`}
-                                            >
-                                                ✏️
-                                            </button>
-                                            <button
-                                                onClick={() => eliminarProducto(prod.id)}
-                                                title="Eliminar producto"
-                                                className="cursor-pointer text-slate-500 hover:text-rose-400 p-1.5 text-xs transition-colors"
-                                            >
-                                                🗑️
-                                            </button>
+                        ) : productosPorGondola ? (
+                            <div className="max-h-[400px] overflow-y-auto pr-2 space-y-4">
+                                {productosPorGondola.map(({ nombreGondola, items }) => (
+                                    <div key={nombreGondola}>
+                                        <h3 className="sticky top-0 z-10 bg-slate-850 py-1.5 mb-2 text-[11px] font-bold uppercase tracking-wider text-sky-400 border-b border-slate-700/60">
+                                            📍 {nombreGondola} · {items.length} {items.length === 1 ? 'producto' : 'productos'}
+                                        </h3>
+                                        <div className="space-y-2">
+                                            {items.map((prod) => renderProducto(prod))}
                                         </div>
                                     </div>
                                 ))}
+                            </div>
+                        ) : (
+                            <div className="max-h-[400px] overflow-y-auto pr-2 space-y-2">
+                                {productosFiltrados.map((prod) => renderProducto(prod))}
                             </div>
                         )}
                     </div>

@@ -13,7 +13,7 @@ class Producto extends Model
     protected $table = 'productos';
 
     // Columnas que permitimos llenar masivamente desde el formulario
-    protected $fillable = ['nombre', 'codigo_barras', 'gondola_id'];
+    protected $fillable = ['nombre', 'gondola_id'];
 
     // Relación inversa: Un producto pertenece a una Góndola
     public function gondola()

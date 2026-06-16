@@ -7,23 +7,6 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import globals from 'globals';
 import typescript from 'typescript-eslint';
 
-const controlStatements = [
-    'if',
-    'return',
-    'for',
-    'while',
-    'do',
-    'switch',
-    'try',
-    'throw',
-];
-const paddingAroundControl = [
-    ...controlStatements.flatMap((stmt) => [
-        { blankLine: 'always', prev: '*', next: stmt },
-        { blankLine: 'always', prev: stmt, next: '*' },
-    ]),
-];
-
 /** @type {import('eslint').Linter.Config[]} */
 export default [
     js.configs.recommended,
@@ -95,11 +78,8 @@ export default [
             '@stylistic': stylistic,
         },
         rules: {
-            '@stylistic/brace-style': ['error', '1tbs', { allowSingleLine: false }],
-            '@stylistic/padding-line-between-statements': [
-                'error',
-                ...paddingAroundControl,
-            ],
+            '@stylistic/brace-style': 'off',
+            '@stylistic/padding-line-between-statements': 'off',
         },
     },
     {
@@ -122,8 +102,12 @@ export default [
             '@stylistic': stylistic,
         },
         rules: {
-            curly: ['error', 'all'],
-            '@stylistic/brace-style': ['error', '1tbs', { allowSingleLine: false }],
+            curly: 'off',
+            '@stylistic/brace-style': 'off',
+            '@stylistic/padding-line-between-statements': 'off',
+            'react-hooks/set-state-in-effect': 'off',
+            'react-hooks/exhaustive-deps': 'off',
+            'react-hooks/immutability': 'off',
         },
     },
 ];

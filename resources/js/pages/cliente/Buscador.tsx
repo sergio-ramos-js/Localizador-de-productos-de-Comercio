@@ -33,7 +33,7 @@ export default function Buscador({ gondolas = [], productos = [] }: Props) {
     const [isDragging, setIsDragging] = useState(false);
     const startPan = useRef({ x: 0, y: 0 });
     const svgRef = useRef<SVGSVGElement>(null);
-    const [zoom, setZoom] = useState(1); // O el zoom inicial que uses (ej: 1 o 1.5)
+    // const [zoom, setZoom] = useState(1); // O el zoom inicial que uses (ej: 1 o 1.5)
     const TAMANO_GRILLA = 100;
 
     // Filtro predictivo de productos
@@ -225,15 +225,22 @@ export default function Buscador({ gondolas = [], productos = [] }: Props) {
         <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center p-4 selection:bg-sky-500/30 overflow-x-hidden">
             <Head title="Buscador de Productos" />
 
-            {/* Estilo CSS inyectado para la animación de parpadeo */}
+            {/* Animación de pulso dorado para la góndola buscada */}
             <style>{`
                 @keyframes pulse-highlight {
-                    0% { fill: #facc15; stroke: #eab308; opacity: 1; }
-                    50% { fill: #ca8a04; stroke: #fef08a; opacity: 0.8; }
-                    100% { fill: #facc15; stroke: #eab308; opacity: 1; }
+                    0%, 100% { fill: #fde047; }
+                    50% { fill: #f59e0b; }
+                }
+                @keyframes pulse-glow {
+                    0%, 100% { opacity: 0.35; }
+                    50% { opacity: 0.75; }
                 }
                 .gondola-activa {
-                    animation: pulse-highlight 1.5s infinite ease-in-out;
+                    animation: pulse-highlight 1.1s ease-in-out infinite;
+                }
+                .gondola-pulse-glow {
+                    animation: pulse-glow 1.1s ease-in-out infinite;
+                    pointer-events: none;
                 }
             `}</style>
 
@@ -335,6 +342,13 @@ export default function Buscador({ gondolas = [], productos = [] }: Props) {
                                 <pattern id="client-grid" width="10" height="10" patternUnits="userSpaceOnUse">
                                     <path d="M 10 0 L 0 0 0 10" fill="none" stroke="#1e293b" strokeWidth="0.15" />
                                 </pattern>
+                                <filter id="gondola-glow" x="-80%" y="-80%" width="260%" height="260%">
+                                    <feGaussianBlur stdDeviation="1.4" result="blur" />
+                                    <feMerge>
+                                        <feMergeNode in="blur" />
+                                        <feMergeNode in="SourceGraphic" />
+                                    </feMerge>
+                                </filter>
                             </defs>
                             <rect x="-200" y="-200" width="500" height="500" fill="url(#client-grid)" pointerEvents="none" />
 
@@ -353,32 +367,36 @@ export default function Buscador({ gondolas = [], productos = [] }: Props) {
 
                                 return (
                                     <g key={gondola.id}>
-                                        {/* 📦 El Rectángulo (Fondo de la Góndola) */}
+                                        {esLaBuscada && (
+                                            <rect
+                                                x={gondola.posicion_x - 2.5}
+                                                y={gondola.posicion_y - 2.5}
+                                                width={gAncho + 5}
+                                                height={gAlto + 5}
+                                                rx="2"
+                                                fill="#facc15"
+                                                className="gondola-pulse-glow"
+                                            />
+                                        )}
                                         <rect
                                             x={gondola.posicion_x}
                                             y={gondola.posicion_y}
                                             width={gAncho}
                                             height={gAlto}
                                             rx="1"
-                                            // Si es la buscada se pinta de dorado (#eab308), si no, de su color base
-                                            fill={esLaBuscada ? '#eab308' : colorBase}
-                                            // El borde acompaña exactamente al mismo color para evitar líneas blancas feas
-                                            stroke={esLaBuscada ? '#eab308' : colorBase}
-                                            strokeWidth="0.5"
-                                            // Agregamos el parpadeo de Tailwind DIRECTO aquí solo si es la buscada
-                                            className={esLaBuscada ? 'animate-pulse' : ''}
+                                            fill={esLaBuscada ? '#fde047' : colorBase}
+                                            stroke={esLaBuscada ? 'none' : colorBase}
+                                            strokeWidth={esLaBuscada ? 0 : 0.5}
+                                            className={esLaBuscada ? 'gondola-activa' : ''}
+                                            filter={esLaBuscada ? 'url(#gondola-glow)' : undefined}
                                             style={{ WebkitTapHighlightColor: 'transparent' }}
                                         />
-
-                                        {/* 📝 El Texto (Nombre de la Góndola) - Puesto correctamente adentro */}
                                         <text
                                             x={gondola.posicion_x + 1}
                                             y={gondola.posicion_y + (gAlto / 1.5)}
                                             fontSize="3"
                                             fontWeight="600"
-                                            fill="#ffffff"
-                                            // Si es la buscada, que el texto también parpadee junto con la góndola
-                                            className={esLaBuscada ? 'animate-pulse' : ''}
+                                            fill={esLaBuscada ? '#1c1917' : '#ffffff'}
                                             style={{
                                                 userSelect: 'none',
                                                 pointerEvents: 'none',

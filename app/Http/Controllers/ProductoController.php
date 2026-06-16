@@ -25,14 +25,12 @@ class ProductoController extends Controller
     {
         $request->validate([
             'nombre' => 'required|string|max:100',
-            'codigo_barras' => 'nullable|string|max:50',
-            'gondola_id' => 'nullable|exists:gondolas,id', // Puede ser null por tu migración
+            'gondola_id' => 'nullable|exists:gondolas,id',
         ]);
 
         Producto::create([
             'nombre' => $request->nombre,
-            'codigo_barras' => $request->codigo_barras,
-            'gondola_id' => $request->gondola_id ?: null // Si viene vacío, lo guarda como null
+            'gondola_id' => $request->gondola_id ?: null,
         ]);
 
         return redirect()->back(); // Refresca los datos en la pantalla con Inertia
@@ -54,15 +52,12 @@ class ProductoController extends Controller
 
         $request->validate([
             'nombre' => 'required|string|max:100',
-            'codigo_barras' => 'nullable|string|max:50',
             'gondola_id' => 'nullable|exists:gondolas,id',
         ]);
 
-        // Actualizamos el registro usando fillable
         $producto->update([
             'nombre' => $request->nombre,
-            'codigo_barras' => $request->codigo_barras,
-            'gondola_id' => $request->gondola_id ?: null // Mantenemos tu misma lógica para nulos
+            'gondola_id' => $request->gondola_id ?: null,
         ]);
 
         return redirect()->back(); // Inertia refresca el listado automáticamente

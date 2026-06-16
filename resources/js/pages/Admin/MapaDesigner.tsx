@@ -1,9 +1,3 @@
-/* eslint-disable @stylistic/brace-style */
-/* eslint-disable react-hooks/set-state-in-effect */
-/* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable react-hooks/immutability */
-/* eslint-disable @stylistic/padding-line-between-statements */
-/* eslint-disable curly */
 import { Head, router } from '@inertiajs/react';
 import React, { useState, useEffect, useRef } from 'react';
 import { useCallback } from 'react';

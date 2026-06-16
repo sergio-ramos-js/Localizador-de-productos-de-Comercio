@@ -47,7 +47,7 @@ export default function QrGenerator({ urlBuscar }: Props) {
     const imprimirQR = () => {
         window.print();
     };
-
+    console.log(urlBuscar);
     return (
         <div className="p-6 max-w-4xl mx-auto space-y-6">
             <Head title="Generador de Código QR" />

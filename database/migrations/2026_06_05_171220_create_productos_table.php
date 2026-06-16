@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::create('productos', function (Blueprint $table) {
             $table->id();
             $table->string('nombre');
-            $table->string('codigo_barras')->nullable();
             $table->foreignId('gondola_id')->nullable()->constrained('gondolas')->onDelete('set null');
             $table->timestamps();
         });
