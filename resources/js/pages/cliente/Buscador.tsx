@@ -393,7 +393,7 @@ export default function Buscador({ gondolas = [], productos = [] }: Props) {
                     </svg>
 
                     {!gondolaDestacada && (
-                        <div className="absolute inset-x-0 top-1/8 -translate-y-1/2 pointer-events-none flex items-center justify-center p-6 text-center">
+                        <div className="absolute inset-x-0 top-1/16 -translate-y-1/2 pointer-events-none flex items-center justify-center p-6 text-center">
                             <span className="bg-slate-950/80 border border-slate-800 text-slate-400 text-xs px-3 py-1.5 rounded-full shadow-md backdrop-blur-sm">
                                 👆 Puedes arrastrar o hacer zoom en el mapa
                             </span>

@@ -55,7 +55,7 @@ export default function QrGenerator({ urlBuscar }: Props) {
             {/* Encabezado - Oculto al imprimir */}
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-200 pb-5 print:hidden">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+                    <h1 className="text-2xl font-bold tracking-tight  flex items-center gap-2">
                         <QrCode className="h-6 w-6 text-sky-500" />
                         Código QR de la Tienda
                     </h1>
@@ -157,3 +157,12 @@ export default function QrGenerator({ urlBuscar }: Props) {
         </div>
     );
 }
+
+QrGenerator.layout = {
+    breadcrumbs: [
+        {
+            title: 'QR para buscador',
+            href: '/admin/qr', // 👈 La URL de tu ruta del mapa
+        },
+    ],
+};

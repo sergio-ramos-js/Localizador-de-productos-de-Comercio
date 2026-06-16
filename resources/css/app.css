@@ -143,6 +143,6 @@
 
     /* Evita zoom en iOS al hacer focus en inputs */
     input, select, textarea {
-        font-size: 16px;
+        font-size: 16px!important;
     }
 }

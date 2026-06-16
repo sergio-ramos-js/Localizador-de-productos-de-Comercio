@@ -557,3 +557,12 @@ export default function MapaDesigner({ gondolasIniciales }: Props) {
         </div>
     );
 }
+
+MapaDesigner.layout = {
+    breadcrumbs: [
+        {
+            title: 'Diseñador de Mapa',
+            href: '/admin/mapa', // 👈 La URL de tu ruta del mapa
+        },
+    ],
+};

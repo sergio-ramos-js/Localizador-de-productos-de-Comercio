@@ -7,12 +7,6 @@ import AuthLayout from '@/layouts/auth-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 
 
-// DEBUG - sacar después
-// DEBUG - sacar después
-if (import.meta.env.DEV && typeof window !== 'undefined') {
-    import('eruda').then(({ default: eruda }) => eruda.init());
-}
-
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
 createInertiaApp({
