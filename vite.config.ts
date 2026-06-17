@@ -8,12 +8,12 @@ import { bunny } from 'laravel-vite-plugin/fonts';
 
 export default defineConfig({
     server: {
-        host: '0.0.0.0',
+        host: true, // ← Cambia a true (mejor que 0.0.0.0 en algunos casos)
         port: 5371,
         strictPort: true,
         cors: true,
         hmr: {
-            host: '192.168.1.116',   // ← Tu IP exacta
+            host: '192.168.1.100', // ← Tu IP actual
             port: 5371,
             protocol: 'http',
         },
@@ -40,4 +40,4 @@ export default defineConfig({
             formVariants: true,
         }),
     ],
-}); 
+});

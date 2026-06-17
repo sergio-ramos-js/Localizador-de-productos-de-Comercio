@@ -19,6 +19,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Panel de Góndolas
     Route::get('/admin/gondolas', [GondolaController::class, 'index'])->name('gondolas.index');
     Route::post('/admin/gondolas', [GondolaController::class, 'store'])->name('gondolas.store');
+    Route::put('/admin/gondolas/{id}', [GondolaController::class, 'update'])->name('gondolas.update');
     Route::post('/admin/gondolas/{id}/posicion', [GondolaController::class, 'updatePosition'])->name('gondolas.updatePosition');
     Route::delete('/admin/gondolas/{id}', [GondolaController::class, 'destroy'])->name('gondolas.destroy');
 

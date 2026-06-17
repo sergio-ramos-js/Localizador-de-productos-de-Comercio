@@ -1,3 +1,4 @@
+import GondolaLabel from '@/components/GondolaLabel';
 import { Head } from '@inertiajs/react';
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 
@@ -391,19 +392,14 @@ export default function Buscador({ gondolas = [], productos = [] }: Props) {
                                             filter={esLaBuscada ? 'url(#gondola-glow)' : undefined}
                                             style={{ WebkitTapHighlightColor: 'transparent' }}
                                         />
-                                        <text
-                                            x={gondola.posicion_x + 1}
-                                            y={gondola.posicion_y + (gAlto / 1.5)}
-                                            fontSize="3"
-                                            fontWeight="600"
+                                        <GondolaLabel
+                                            nombre={gondola.nombre}
+                                            x={gondola.posicion_x}
+                                            y={gondola.posicion_y}
+                                            ancho={gAncho}
+                                            alto={gAlto}
                                             fill={esLaBuscada ? '#1c1917' : '#ffffff'}
-                                            style={{
-                                                userSelect: 'none',
-                                                pointerEvents: 'none',
-                                            }}
-                                        >
-                                            {gondola.nombre}
-                                        </text>
+                                        />
                                     </g>
                                 );
                             })}
@@ -418,7 +414,10 @@ export default function Buscador({ gondolas = [], productos = [] }: Props) {
                         </div>
                     )}
                 </div>
-
+                <div className="mt-4 text-center text-amber-400 text-xs bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3">
+                    ⚠️ Si no encontrás el producto, es posible que haya sido reubicado recientemente.<br />
+                    <span className="text-amber-300">buscá en góndolas cercanas o consultá con un empleado..</span>
+                </div>
             </main>
 
             <footer className="mt-auto pt-6 text-[10px] text-slate-600 tracking-wider">

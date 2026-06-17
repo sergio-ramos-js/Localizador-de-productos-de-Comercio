@@ -40,6 +40,8 @@ class GondolaController extends Controller
         $request->validate([
             'nombre' => 'required|string|max:50',
             'color' => 'nullable|string|size:7',
+            'ancho' => 'nullable|integer|min:4|max:50',
+            'alto' => 'nullable|integer|min:4|max:50',
         ]);
 
         Gondola::create([
@@ -47,11 +49,31 @@ class GondolaController extends Controller
             'color' => $request->color ?? '#475569',
             'posicion_x' => 40, // Aparece centrada
             'posicion_y' => 40,
-            'ancho' => 15,      // Tamaño estándar inicial
-            'alto' => 6,
+            'ancho' => $request->ancho ?? 15,      // Tamaño estándar inicial
+            'alto' => $request->alto ?? 6,
         ]);
 
         return redirect()->back(); // Recarga los datos automáticamente con Inertia
+    }
+
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'nombre' => 'required|string|max:50',
+            'color' => 'nullable|string|size:7',
+            'ancho' => 'nullable|integer|min:4|max:50',
+            'alto' => 'nullable|integer|min:4|max:50',
+        ]);
+
+        $gondola = Gondola::findOrFail($id);
+        $gondola->update([
+            'nombre' => $request->nombre,
+            'color' => $request->color ?? '#475569',
+            'ancho' => $request->ancho ?? 15,
+            'alto' => $request->alto ?? 6,
+        ]);
+
+        return redirect()->back();
     }
 
     // NUEVO: Eliminar una góndola de la base de datos

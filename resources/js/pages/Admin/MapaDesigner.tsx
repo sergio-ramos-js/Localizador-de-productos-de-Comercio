@@ -1,3 +1,5 @@
+import ColorPickerWithHistory from '@/components/ColorPickerWithHistory';
+import GondolaLabel from '@/components/GondolaLabel';
 import { Head, router } from '@inertiajs/react';
 import React, { useState, useEffect, useRef } from 'react';
 import { useCallback } from 'react';
@@ -9,6 +11,7 @@ interface Gondola {
     posicion_y: number;
     ancho: number;
     alto: number;
+    color?: string;
 }
 
 interface Props {
@@ -21,11 +24,16 @@ export default function MapaDesigner({ gondolasIniciales }: Props) {
     const [nuevoNombre, setNuevoNombre] = useState('');
     const [nuevoColor, setNuevoColor] = useState('#475569'); // 🚀 Gris por defecto
     const [modoEliminar, setModoEliminar] = useState(false);
+    const [modoEditar, setModoEditar] = useState(false);
+    const [editandoId, setEditandoId] = useState<number | null>(null);
 
     // 🚀 NUEVOS ESTADOS: Control de navegación del mapa completo
     const [zoom, setZoom] = useState(1);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
     const [isDraggingLienzo, setIsDraggingLienzo] = useState(false);
+
+    const [nuevoAncho, setNuevoAncho] = useState(16);
+    const [nuevoAlto, setNuevoAlto] = useState(6);
 
     // REFERENCIAS: para tama;os ubicaciones y calculos matematicos para el mapa
     const startTouchPan = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -204,18 +212,53 @@ export default function MapaDesigner({ gondolasIniciales }: Props) {
 
 
     // FUNCIONES
-    const iniciarArrastre = (id: number, e: React.MouseEvent) => {
-        e.stopPropagation(); // 🚀 EVITA que el fondo del mapa crea que estamos arrastrando el lienzo entero
+    const limpiarFormulario = () => {
+        setEditandoId(null);
+        setNuevoNombre('');
+        setNuevoColor('#475569');
+        setNuevoAncho(18);
+        setNuevoAlto(8);
+    };
+
+    const activarEdicion = (gondola: Gondola) => {
+        setEditandoId(gondola.id);
+        setNuevoNombre(gondola.nombre);
+        setNuevoColor(gondola.color || '#475569');
+        setNuevoAncho(gondola.ancho || 18);
+        setNuevoAlto(gondola.alto || 8);
+    };
+
+    const seleccionarGondolaEnMapa = (gondola: Gondola, e: React.SyntheticEvent) => {
+        e.stopPropagation();
 
         if (modoEliminar) {
-            if (confirm('¿Seguro que deseas eliminar este pasillo?')) {
-                router.delete(`/admin/gondolas/${id}`, {
-                    preserveScroll: true
+            if (confirm(`¿Seguro que deseas eliminar el elemento "${gondola.nombre}"?`)) {
+                router.delete(`/admin/gondolas/${gondola.id}`, {
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        if (editandoId === gondola.id) limpiarFormulario();
+                    },
                 });
             }
             return;
         }
-        setGondolaActiva(id);
+
+        if (modoEditar) {
+            activarEdicion(gondola);
+            return;
+        }
+
+        setGondolaActiva(gondola.id);
+    };
+
+    const iniciarArrastre = (gondola: Gondola, e: React.MouseEvent) => {
+        if (modoEliminar || modoEditar) {
+            seleccionarGondolaEnMapa(gondola, e);
+            return;
+        }
+
+        e.stopPropagation();
+        setGondolaActiva(gondola.id);
     };
 
     // 🚀 NUEVO: Iniciar el arrastre del fondo (Paneo de la tienda)
@@ -310,20 +353,51 @@ export default function MapaDesigner({ gondolasIniciales }: Props) {
         setOffset({ x: offsetXIdeal, y: offsetYIdeal });
     };
 
-    const agregarGondola = (e: React.FormEvent) => {
+    useEffect(() => {
+        if (!editandoId) return;
+
+        setGondolas((prev) =>
+            prev.map((g) =>
+                g.id === editandoId
+                    ? {
+                          ...g,
+                          nombre: nuevoNombre,
+                          color: nuevoColor,
+                          ancho: nuevoAncho,
+                          alto: nuevoAlto,
+                      }
+                    : g,
+            ),
+        );
+    }, [editandoId, nuevoNombre, nuevoColor, nuevoAncho, nuevoAlto]);
+
+    const guardarGondola = (e: React.FormEvent) => {
         e.preventDefault();
         if (!nuevoNombre.trim()) return;
 
-        router.post('/admin/gondolas', {
+        const payload = {
             nombre: nuevoNombre,
-            color: nuevoColor // 🚀 Enviamos el color elegido a Laravel
-        }, {
+            color: nuevoColor,
+            ancho: nuevoAncho,
+            alto: nuevoAlto,
+        };
+
+        if (editandoId) {
+            router.put(`/admin/gondolas/${editandoId}`, payload, {
+                preserveScroll: true,
+                onSuccess: () => {
+                    limpiarFormulario();
+                    setModoEditar(false);
+                },
+            });
+            return;
+        }
+
+        router.post('/admin/gondolas', payload, {
             onSuccess: () => {
                 setNuevoNombre('');
-                // 💡 QUITAMOS el reset de color para mantener en memoria el último usado.
-                // Si creás muchas seguidas, ya se quedan con el mismo tono.
             },
-            preserveScroll: true
+            preserveScroll: true,
         });
     };
 
@@ -338,72 +412,124 @@ export default function MapaDesigner({ gondolasIniciales }: Props) {
                     <div>
                         <h2 className="text-xl font-bold text-white mb-4">Herramientas</h2>
 
-                        {/* Formulario de creación */}
-                        <form onSubmit={agregarGondola} className="mb-6">
+                        {/* Formulario de creación / edición */}
+                        <form onSubmit={guardarGondola} className="mb-6">
                             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
-                                Nueva Góndola / Sector
+                                {editandoId ? 'Editar Góndola / Sector' : 'Nueva Góndola / Sector'}
                             </label>
-                            <div className="flex gap-2 items-stretch mb-3"> {/* items-stretch para que todos tengan la misma altura */}
+
+                            <div className="space-y-3">
+                                {/* Nombre */}
                                 <input
                                     type="text"
                                     value={nuevoNombre}
                                     onChange={(e) => setNuevoNombre(e.target.value)}
-                                    placeholder="Ej: Góndola 1, Salida, Baño etc.."
-                                    className="w-full px-3 py-1.5 bg-slate-900 border border-slate-600 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-500"
+                                    placeholder="Ej: Góndola 1 - Almacén"
+                                    className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-500"
                                 />
 
-                                {/* 🎨 Selector de color integrado y estilizado para modo oscuro */}
-                                <div className="flex items-center px-1.5 bg-slate-900 border border-slate-600 rounded-lg focus-within:border-sky-500">
-                                    <input
-                                        type="color"
-                                        value={nuevoColor}
-                                        onChange={(e) => setNuevoColor(e.target.value)}
-                                        className="w-7 h-7 cursor-pointer border-0 rounded bg-transparent outline-none"
-                                        title="Elegir color personalizado"
-                                    />
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-[10px] uppercase text-slate-500 mb-1">Ancho</label>
+                                        <input
+                                            type="number"
+                                            value={nuevoAncho}
+                                            onChange={(e) => setNuevoAncho(Number(e.target.value))}
+                                            min="4"
+                                            max="40"
+                                            className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-center"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] uppercase text-slate-500 mb-1">Alto</label>
+                                        <input
+                                            type="number"
+                                            value={nuevoAlto}
+                                            onChange={(e) => setNuevoAlto(Number(e.target.value))}
+                                            min="4"
+                                            max="40"
+                                            className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-center"
+                                        />
+                                    </div>
                                 </div>
 
-                                <button
-                                    type="submit"
-                                    className="px-4 bg-sky-600 hover:bg-sky-500 text-white font-bold text-sm rounded-lg transition-colors flex items-center justify-center"
-                                >
-                                    +
-                                </button>
-                            </div>
+                                <ColorPickerWithHistory
+                                    value={nuevoColor}
+                                    onChange={setNuevoColor}
+                                    mapColors={gondolas.map((gondola) => gondola.color || '#475569')}
+                                />
+                                <div className="flex gap-2">
 
-                            {/* 🎯 Paleta de colores rápidos con los tonos de tu sistema */}
-                            <div className="flex items-center gap-2 px-1">
-                                <span className="text-[11px] text-slate-500 font-medium">Colores rápidos:</span>
-                                <div className="flex gap-1.5">
-                                    {[
-                                        { hex: '#475569', label: 'Góndola' },
-                                        { hex: '#3fc23d', label: 'Entrada' },
-                                        { hex: '#c91d25', label: 'Salida' },
-                                        { hex: '#1b62c5', label: 'Cajas' },
-                                        { hex: '#bcb134', label: 'Baño' }
-                                    ].map((preset) => (
+                                    {/* Botón Rotar 90° */}
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setNuevoAncho(nuevoAlto);
+                                            setNuevoAlto(nuevoAncho);
+                                        }}
+                                        className="w-full py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        ↔ Rotar 90° (Ancho ↔ Alto)
+                                    </button>
+
+                                    {editandoId && (
                                         <button
-                                            key={preset.hex}
                                             type="button"
-                                            onClick={() => setNuevoColor(preset.hex)}
-                                            title={preset.label}
-                                            className={`w-5 h-5 rounded-full border transition-all ${nuevoColor.toLowerCase() === preset.hex.toLowerCase()
-                                                    ? 'border-white scale-110 shadow-lg shadow-black/50'
-                                                    : 'border-slate-700 hover:scale-105'
-                                                }`}
-                                            style={{ backgroundColor: preset.hex }}
-                                        />
-                                    ))}
+                                            onClick={() => {
+                                                limpiarFormulario();
+                                                setGondolas(gondolasIniciales);
+                                            }}
+                                            className="px-4 bg-slate-700 hover:bg-slate-600 h-9 text-white rounded-lg text-sm font-medium transition-colors"
+                                        >
+                                            Cancelar
+                                        </button>
+                                    )}
+
+                                    <button
+                                        type="submit"
+                                        className="px-6 bg-sky-600 h-9 hover:bg-sky-500 text-white font-bold rounded-lg transition-colors"
+                                    >
+                                        {editandoId ? 'Guardar' : 'Crear'}
+                                    </button>
                                 </div>
                             </div>
                         </form>
 
                         <hr className="border-slate-700 mb-6" />
 
+                        {/* Modo editar */}
+                        <div className="mb-4">
+                            <button
+                                onClick={() => {
+                                    setModoEditar(!modoEditar);
+                                    setModoEliminar(false);
+                                    if (modoEditar) {
+                                        limpiarFormulario();
+                                        setGondolas(gondolasIniciales);
+                                    }
+                                }}
+                                className={`w-full py-2 px-4 rounded-lg text-sm font-semibold border transition-all ${modoEditar
+                                    ? 'bg-amber-600 border-amber-500 text-white animate-pulse'
+                                    : 'bg-slate-900 border-slate-700 text-slate-300 hover:bg-slate-700'
+                                    }`}
+                            >
+                                {modoEditar ? '🛑 Cancelar Edición' : '✏️ Modo Editar'}
+                            </button>
+                            <p className="text-[11px] text-slate-400 mt-2 leading-relaxed">
+                                {modoEditar
+                                    ? 'Haz clic sobre un elemento del mapa para cargarlo en el formulario y modificar nombre, tamaño o color.'
+                                    : 'Activa este modo para editar góndolas existentes desde el mapa.'}
+                            </p>
+                        </div>
+
                         {/* Botón de borrado */}
                         <div className="mb-4">
                             <button
-                                onClick={() => setModoEliminar(!modoEliminar)}
+                                onClick={() => {
+                                    setModoEliminar(!modoEliminar);
+                                    setModoEditar(false);
+                                    limpiarFormulario();
+                                }}
                                 className={`w-full py-2 px-4 rounded-lg text-sm font-semibold border transition-all ${modoEliminar
                                     ? 'bg-rose-600 border-rose-500 text-white animate-pulse'
                                     : 'bg-slate-900 border-slate-700 text-slate-300 hover:bg-slate-700'
@@ -485,8 +611,11 @@ export default function MapaDesigner({ gondolasIniciales }: Props) {
                                         colorFill = '#f43f5e';  // Rojo/Rosa de advertencia
                                         colorStroke = '#e11d48';
                                     } else if (gondolaActiva === gondola.id) {
-                                        colorFill = '#38bdf8';  // Celeste brillante de activo
+                                        colorFill = '#38bdf8';
                                         colorStroke = '#0ea5e9';
+                                    } else if (editandoId === gondola.id) {
+                                        colorFill = '#fbbf24';
+                                        colorStroke = '#f59e0b';
                                     }
 
                                     return (
@@ -505,29 +634,25 @@ export default function MapaDesigner({ gondolasIniciales }: Props) {
                                                     // 🚀 TRUCO: Si no está activo ni para eliminar, oscurece el borde un 15% automáticamente para que tenga relieve gráfico profesional
                                                     filter: (modoEliminar || gondolaActiva === gondola.id) ? 'none' : 'brightness(0.85)'
                                                 }}
-                                                className={`transition-colors duration-100 ${modoEliminar ? 'cursor-pointer hover:fill-rose-700' : 'cursor-move'}`}
-                                                // 💻 Para PC:
-                                                onMouseDown={(e) => iniciarArrastre(gondola.id, e)}
-                                                // 📱 Para Celular: Activamos la góndola y detenemos la propagación para que el fondo no se entere
+                                                className={`transition-colors duration-100 ${modoEliminar ? 'cursor-pointer hover:fill-rose-700' : modoEditar ? 'cursor-pointer hover:brightness-110' : 'cursor-move'}`}
+                                                onMouseDown={(e) => iniciarArrastre(gondola, e)}
                                                 onTouchStart={(e) => {
-                                                    e.stopPropagation(); // 🚀 Evita que el fondo crea que queremos arrastrar el mapa
-                                                    if (!modoEliminar) {
-                                                        setGondolaActiva(gondola.id);
-                                                    } else {
-                                                        // Si estás en modo eliminar, ejecutas tu función de borrado
-                                                        // handleEliminar(gondola.id); 
+                                                    if (modoEliminar || modoEditar) {
+                                                        seleccionarGondolaEnMapa(gondola, e);
+                                                        return;
                                                     }
+
+                                                    e.stopPropagation();
+                                                    setGondolaActiva(gondola.id);
                                                 }}
                                             />
-                                            <text
-                                                x={gondola.posicion_x + 1}
-                                                // Centrado dinámico basado en la altura del elemento
-                                                y={gondola.posicion_y + (gondola.alto ? gondola.alto / 1.5 : 5)}
-                                                fontSize="3"
-                                                className="fill-white font-semibold pointer-events-none select-none"
-                                            >
-                                                {gondola.nombre}
-                                            </text>
+                                            <GondolaLabel
+                                                nombre={gondola.nombre}
+                                                x={gondola.posicion_x}
+                                                y={gondola.posicion_y}
+                                                ancho={gondola.ancho || 20}
+                                                alto={gondola.alto || 8}
+                                            />
                                         </g>
                                     );
                                 })}

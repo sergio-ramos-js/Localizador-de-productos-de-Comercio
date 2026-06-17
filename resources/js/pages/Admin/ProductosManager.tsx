@@ -1,7 +1,6 @@
 import { Head, router } from '@inertiajs/react';
 import React, { useMemo, useState } from 'react';
 
-
 interface Gondola {
     id: number;
     nombre: string;
@@ -207,7 +206,7 @@ export default function ProductosManager({ productos, gondolas }: Props) {
                                     ))}
                                 </select>
                             </div>
-
+                                    
                             <div className="flex flex-col gap-2">
                                 {/* 🔄 Botón de acción principal con color e icono dinámico */}
                                 <button
