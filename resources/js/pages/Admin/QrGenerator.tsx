@@ -42,12 +42,11 @@ export default function QrGenerator({ urlBuscar }: Props) {
         };
         image.src = blobURL;
     };
-
+    
     // Función para mandar a imprimir solo el cartel del QR de forma prolija
     const imprimirQR = () => {
         window.print();
     };
-    console.log(urlBuscar);
     return (
         <div className="p-6 max-w-4xl mx-auto space-y-6">
             <Head title="Generador de Código QR" />

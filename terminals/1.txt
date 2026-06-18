@@ -1,0 +1,13 @@
+---
+pid: 10256
+cwd: "C:\Users\Sergio\Desktop\PROG\TypeScript\mapa-tienda"
+command: "php artisan serve --host=127.0.0.1 --port=8001"
+started_at: 2026-06-17T12:48:11.175Z
+running_for_ms: 22675001 
+---
+
+   INFO  Server running on [http://127.0.0.1:8001].  
+
+  Press Ctrl+C to stop the server
+
+  2026-06-17 09:48:14 /buscar ................................................................................. ~ 10s

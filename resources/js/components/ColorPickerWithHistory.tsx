@@ -91,7 +91,7 @@ export default function ColorPickerWithHistory({
                         type="color"
                         value={normalizedValue}
                         onChange={(e) => handleChange(e.target.value)}
-                        className="w-full px-3 py-1 h-[42px] bg-slate-900 border border-slate-600 rounded-lg cursor-pointer"
+                        className="w-full px-3 py-1 h-10.5 bg-slate-900 border border-slate-600 rounded-lg cursor-pointer"
                     />
                 </div>
 
