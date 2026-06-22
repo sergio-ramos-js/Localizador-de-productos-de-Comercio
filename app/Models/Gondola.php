@@ -17,9 +17,8 @@ class Gondola extends Model
         'ancho',
         'alto',
     ];
-    // Añade este método antes de cerrar la llave del modelo Gondola
     public function productos()
     {
-        return $this->hasMany(Producto::class, 'gondola_id');
+        return $this->belongsToMany(Producto::class, 'gondola_producto')->withTimestamps();
     }
 }

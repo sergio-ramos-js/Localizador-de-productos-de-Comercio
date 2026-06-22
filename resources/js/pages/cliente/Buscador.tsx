@@ -1,4 +1,5 @@
 import GondolaLabel from '@/components/GondolaLabel';
+import { formatearLista } from '@/lib/format';
 import { Head } from '@inertiajs/react';
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 
@@ -15,7 +16,7 @@ interface Gondola {
 interface Producto {
     id: number;
     nombre: string;
-    gondola_id?: number | null;
+    gondola_ids?: number[];
 }
 
 interface Props {
@@ -25,19 +26,34 @@ interface Props {
 
 export default function Buscador({ gondolas = [], productos = [] }: Props) {
     const [busqueda, setBusqueda] = useState('');
-    const [gondolaDestacada, setGondolaDestacada] = useState<number | null>(null);
-    const [productoSeleccionado, setProductoSeleccionado] = useState<string | null>(null);
+    const [productoSeleccionadoId, setProductoSeleccionadoId] = useState<number | null>(null);
 
-    // --- ESTADOS PARA ZOOM Y PANNING (MOVIMIENTO) ---
     const [scale, setScale] = useState(1);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
     const startPan = useRef({ x: 0, y: 0 });
     const svgRef = useRef<SVGSVGElement>(null);
-    // const [zoom, setZoom] = useState(1); // O el zoom inicial que uses (ej: 1 o 1.5)
     const TAMANO_GRILLA = 100;
 
-    // Filtro predictivo de productos
+    const productoSeleccionado = useMemo(
+        () => productos.find((p) => p.id === productoSeleccionadoId) ?? null,
+        [productos, productoSeleccionadoId],
+    );
+
+    const gondolasDestacadas = useMemo(() => {
+        if (!productoSeleccionado?.gondola_ids?.length) return new Set<number>();
+
+        return new Set(productoSeleccionado.gondola_ids.map((id) => Number(id)));
+    }, [productoSeleccionado]);
+
+    const nombresGondolasUbicacion = useMemo(() => {
+        if (!productoSeleccionado?.gondola_ids?.length) return [];
+
+        return productoSeleccionado.gondola_ids
+            .map((id) => gondolas.find((g) => Number(g.id) === Number(id))?.nombre)
+            .filter((nombre): nombre is string => Boolean(nombre));
+    }, [productoSeleccionado, gondolas]);
+
     const sugerenciasFiltradas = useMemo(() => {
         if (!busqueda.trim()) return [];
         return productos.filter(p =>
@@ -46,36 +62,12 @@ export default function Buscador({ gondolas = [], productos = [] }: Props) {
     }, [busqueda, productos]);
 
     const seleccionarProducto = (prod: Producto) => {
-        setProductoSeleccionado(prod.nombre);
+        setProductoSeleccionadoId(prod.id);
         setBusqueda('');
-
-        if (prod.gondola_id) {
-            const idGondola = Number(prod.gondola_id);
-            setGondolaDestacada(idGondola);
-
-            // Centrar automáticamente la vista en la góndola seleccionada
-            const gondola = gondolas.find(g => Number(g.id) === idGondola);
-            if (gondola) {
-                const centerX = Number(gondola.posicion_x) + Number(gondola.ancho) / 2;
-                const centerY = Number(gondola.posicion_y) + Number(gondola.alto) / 2;
-
-                // Zoom moderado para enfocar
-                setScale(1.8);
-                // Calculamos el offset para mover ese punto al centro del SVG (50, 50)
-                setOffset({
-                    x: (TAMANO_GRILLA / 2) - (centerX * 1.8),
-                    y: (TAMANO_GRILLA / 2) - (centerY * 1.8)
-                });
-            }
-        } else {
-            setGondolaDestacada(null);
-            alert('Este producto no tiene una góndola física asignada.');
-        }
     };
 
     const limpiarFiltro = () => {
-        setProductoSeleccionado(null);
-        setGondolaDestacada(null);
+        setProductoSeleccionadoId(null);
         resetearVista();
     };
 
@@ -84,28 +76,21 @@ export default function Buscador({ gondolas = [], productos = [] }: Props) {
         setOffset({ x: 0, y: 0 });
     };
 
-    // --- CONTROLES DE INTERACCIÓN MOUSE/TÁCTIL ---
     const handleMouseDown = (e: React.MouseEvent) => {
         setIsDragging(true);
-        // Guardamos la posición exacta del cursor en el momento del click
         startPan.current = { x: e.clientX, y: e.clientY };
     };
 
-    // --- CONFIGURACIÓN DE SENSIBILIDAD ---
-    // Puedes calibrarlo: 0.3 es muy pesado/suave, 1.0 es velocidad real del dedo.
     const FACTOR_SENSIBILIDAD = 0.3;
 
     const handleMouseMove = (e: React.MouseEvent) => {
         if (!isDragging) return;
 
-        // Medimos cuántos píxeles se movió el mouse desde el click inicial
         const deltaX = e.clientX - startPan.current.x;
         const deltaY = e.clientY - startPan.current.y;
 
-        // Actualizamos el punto de inicio para el próximo micro-movimiento continuo
         startPan.current = { x: e.clientX, y: e.clientY };
 
-        // Sumamos el movimiento instantáneamente multiplicado por la sensibilidad
         setOffset(prev => ({
             x: prev.x + deltaX * FACTOR_SENSIBILIDAD,
             y: prev.y + deltaY * FACTOR_SENSIBILIDAD
@@ -116,7 +101,6 @@ export default function Buscador({ gondolas = [], productos = [] }: Props) {
         if (e.touches.length === 1) {
             setIsDragging(true);
             const touch = e.touches[0];
-            // Guardamos la posición exacta del dedo
             startPan.current = { x: touch.clientX, y: touch.clientY };
         }
     };
@@ -125,11 +109,9 @@ export default function Buscador({ gondolas = [], productos = [] }: Props) {
         if (!isDragging || e.touches.length !== 1) return;
         const touch = e.touches[0];
 
-        // Medimos cuántos píxeles se movió tu dedo
         const deltaX = touch.clientX - startPan.current.x;
         const deltaY = touch.clientY - startPan.current.y;
 
-        // Actualizamos el punto de inicio para que el arrastre sea continuo
         startPan.current = { x: touch.clientX, y: touch.clientY };
 
         setOffset(prev => ({
@@ -143,7 +125,7 @@ export default function Buscador({ gondolas = [], productos = [] }: Props) {
     useEffect(() => {
         if (!svgRef.current || gondolas.length === 0) return;
 
-        const ajustarEnfoqueMapa = () => {
+        const ajustarVistaGeneral = () => {
             if (!svgRef.current) return;
 
             const rect = svgRef.current.getBoundingClientRect();
@@ -152,81 +134,46 @@ export default function Buscador({ gondolas = [], productos = [] }: Props) {
 
             if (anchoContenedor === 0 || altoContenedor === 0) return;
 
-            // 🔍 1. Averiguamos si hay una góndola activa por ID directo o cruzando el producto seleccionado
-            let gondolaAEnfocar = null;
+            const minX = Math.min(...gondolas.map(g => Number(g.posicion_x)));
+            const maxX = Math.max(...gondolas.map(g => Number(g.posicion_x) + (Number(g.ancho) || 20)));
+            const minY = Math.min(...gondolas.map(g => Number(g.posicion_y)));
+            const maxY = Math.max(...gondolas.map(g => Number(g.posicion_y) + (Number(g.alto) || 8)));
 
-            if (gondolaDestacada !== null) {
-                gondolaAEnfocar = gondolas.find(g => String(g.id) === String(gondolaDestacada));
-            } else if (productoSeleccionado !== null) {
-                const prod = productos.find(p => String(p.id) === String(productoSeleccionado));
-                if (prod && prod.gondola_id) {
-                    gondolaAEnfocar = gondolas.find(g => String(g.id) === String(prod.gondola_id));
-                }
-            }
+            const centroMapaX = (minX + maxX) / 2;
+            const centroMapaY = (minY + maxY) / 2;
 
-            // 📐 2. Hacemos la matemática de posicionamiento
-            if (gondolaAEnfocar) {
-                // 🎯 MODO ZOOM EN FOCO: Centramos la pantalla exactamente en la góndola buscada
-                const gX = Number(gondolaAEnfocar.posicion_x);
-                const gY = Number(gondolaAEnfocar.posicion_y);
-                const gAncho = Number(gondolaAEnfocar.ancho) || 20;
-                const gAlto = Number(gondolaAEnfocar.alto) || 8;
+            const anchoMapaReal = maxX - minX;
+            const altoMapaReal = maxY - minY;
 
-                const centroTargetX = gX + gAncho / 2;
-                const centroTargetY = gY + gAlto / 2;
+            const relacionEscalaX = TAMANO_GRILLA / (anchoMapaReal || 1);
+            const relacionEscalaY = TAMANO_GRILLA / (altoMapaReal || 1);
 
-                // Un zoom cerrado y cómodo para ver bien el pasillo
-                const zoomEnfoque = 2.0;
+            const escalaInicial = Math.min(relacionEscalaX, relacionEscalaY) * 0.75;
+            const escalaFinal = Math.max(0.6, Math.min(escalaInicial, 2.2));
 
-                const nuevoX = (TAMANO_GRILLA / 2) - (centroTargetX * zoomEnfoque);
-                const nuevoY = (TAMANO_GRILLA / 2) - (centroTargetY * zoomEnfoque);
+            const nuevoX = (TAMANO_GRILLA / 2) - (centroMapaX * escalaFinal);
+            const nuevoY = (TAMANO_GRILLA / 2) - (centroMapaY * escalaFinal);
 
-                setScale(zoomEnfoque);
-                setOffset({ x: nuevoX, y: nuevoY });
-            } else {
-                // 🗺️ MODO VISTA GENERAL: Centramos todo el mapa completo (Tu lógica actual corregida)
-                const minX = Math.min(...gondolas.map(g => Number(g.posicion_x)));
-                const maxX = Math.max(...gondolas.map(g => Number(g.posicion_x) + (Number(g.ancho) || 20)));
-                const minY = Math.min(...gondolas.map(g => Number(g.posicion_y)));
-                const maxY = Math.max(...gondolas.map(g => Number(g.posicion_y) + (Number(g.alto) || 8)));
-
-                const centroMapaX = (minX + maxX) / 2;
-                const centroMapaY = (minY + maxY) / 2;
-
-                const anchoMapaReal = maxX - minX;
-                const altoMapaReal = maxY - minY;
-
-                const relacionEscalaX = TAMANO_GRILLA / (anchoMapaReal || 1);
-                const relacionEscalaY = TAMANO_GRILLA / (altoMapaReal || 1);
-
-                const escalaInicial = Math.min(relacionEscalaX, relacionEscalaY) * 0.75;
-                const escalaFinal = Math.max(0.6, Math.min(escalaInicial, 2.2));
-
-                const nuevoX = (TAMANO_GRILLA / 2) - (centroMapaX * escalaFinal);
-                const nuevoY = (TAMANO_GRILLA / 2) - (centroMapaY * escalaFinal);
-
-                setScale(escalaFinal);
-                setOffset({ x: nuevoX, y: nuevoY });
-            }
+            setScale(escalaFinal);
+            setOffset({ x: nuevoX, y: nuevoY });
         };
 
         const resizeObserver = new ResizeObserver(() => {
-            ajustarEnfoqueMapa();
+            ajustarVistaGeneral();
         });
 
         resizeObserver.observe(svgRef.current);
-        ajustarEnfoqueMapa();
+        ajustarVistaGeneral();
 
         return () => {
             resizeObserver.disconnect();
         };
-        // 🚀 Se dispara inmediatamente al cambiar el producto o la góndola seleccionada
-    }, [gondolas, productos, gondolaDestacada, productoSeleccionado]);
+    }, [gondolas]);
+
     return (
         <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center p-4 selection:bg-sky-500/30 overflow-x-hidden">
             <Head title="Buscador de Productos" />
 
-            {/* Animación de pulso dorado para la góndola buscada */}
             <style>{`
                 @keyframes pulse-highlight {
                     0%, 100% { fill: #fde047; }
@@ -254,7 +201,6 @@ export default function Buscador({ gondolas = [], productos = [] }: Props) {
 
             <main className="w-full max-w-md flex flex-col gap-3 relative">
 
-                {/* Buscador */}
                 <div className="relative">
                     <div className="flex gap-2 bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-xl focus-within:border-sky-500 transition-colors">
                         <span className="text-slate-400">🔍</span>
@@ -272,7 +218,6 @@ export default function Buscador({ gondolas = [], productos = [] }: Props) {
                         )}
                     </div>
 
-                    {/* Sugerencias Predictivas */}
                     {sugerenciasFiltradas.length > 0 && (
                         <div className="absolute left-0 right-0 mt-1 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl overflow-hidden z-50 divide-y divide-slate-800/60">
                             {sugerenciasFiltradas.map((prod) => (
@@ -289,18 +234,28 @@ export default function Buscador({ gondolas = [], productos = [] }: Props) {
                     )}
                 </div>
 
-                {/* Info del Producto Buscado */}
                 {productoSeleccionado && (
-                    <div className="bg-sky-950/40 border border-sky-900/50 p-2.5 rounded-xl text-center">
-                        <p className="text-[11px] text-sky-400">Ubicación fijada para:</p>
-                        <p className="text-sm font-bold text-white">✨ {productoSeleccionado}</p>
+                    <div className="bg-sky-950/40 border border-sky-900/50 px-3 py-2.5 rounded-xl">
+                        {nombresGondolasUbicacion.length > 0 ? (
+                            <p className="text-sm text-slate-100 leading-relaxed">
+                                <span className="font-bold text-white">{productoSeleccionado.nombre}</span>
+                                {' '}se encuentra en{' '}
+                                <span className="font-semibold text-sky-300">
+                                    {formatearLista(nombresGondolasUbicacion)}
+                                </span>
+                                .
+                            </p>
+                        ) : (
+                            <p className="text-sm text-amber-300 leading-relaxed">
+                                <span className="font-bold text-white">{productoSeleccionado.nombre}</span>
+                                {' '}no tiene ubicaciones asignadas en el mapa.
+                            </p>
+                        )}
                     </div>
                 )}
 
-                {/* Contenedor del Mapa SVG */}
                 <div className="w-full aspect-square bg-slate-900 border border-slate-800/80 rounded-2xl shadow-2xl overflow-hidden relative touch-none">
 
-                    {/* Botones Flotantes de Control (Zoom In, Zoom Out, Reset) */}
                     <div className="absolute bottom-3 right-3 flex flex-col gap-1.5 z-10">
                         <button
                             onClick={() => setScale(s => Math.min(s + 0.3, 4))}
@@ -322,7 +277,6 @@ export default function Buscador({ gondolas = [], productos = [] }: Props) {
                         </button>
                     </div>
 
-                    {/* Canvas del Mapa */}
                     <svg
                         ref={svgRef}
                         viewBox={`0 0 ${TAMANO_GRILLA} ${TAMANO_GRILLA}`}
@@ -335,10 +289,8 @@ export default function Buscador({ gondolas = [], productos = [] }: Props) {
                         onTouchMove={handleTouchMove}
                         onTouchEnd={handleStopDragging}
                     >
-                        {/* Grupo Principal afectado por el Zoom y el Desplazamiento */}
                         <g transform={`translate(${offset.x}, ${offset.y}) scale(${scale})`}>
 
-                            {/* Grilla técnica interna */}
                             <defs>
                                 <pattern id="client-grid" width="10" height="10" patternUnits="userSpaceOnUse">
                                     <path d="M 10 0 L 0 0 0 10" fill="none" stroke="#1e293b" strokeWidth="0.15" />
@@ -353,15 +305,9 @@ export default function Buscador({ gondolas = [], productos = [] }: Props) {
                             </defs>
                             <rect x="-200" y="-200" width="500" height="500" fill="url(#client-grid)" pointerEvents="none" />
 
-                            {/* Dibujado de las Góndolas */}
                             {gondolas.map((gondola) => {
                                 const colorBase = gondola.color || '#475569';
-
-                                // 🔍 Tu lógica de búsqueda impecable que ya detecta bien
-                                const esGondolaDirecta = gondolaDestacada !== null && String(gondola.id) === String(gondolaDestacada);
-                                const productoActual = productoSeleccionado !== null ? productos.find(p => String(p.id) === String(productoSeleccionado)) : null;
-                                const esGondolaDeProducto = productoActual && String(gondola.id) === String(productoActual.gondola_id);
-                                const esLaBuscada = esGondolaDirecta || esGondolaDeProducto;
+                                const esLaBuscada = gondolasDestacadas.has(Number(gondola.id));
 
                                 const gAncho = gondola.ancho || 20;
                                 const gAlto = gondola.alto || 8;
@@ -406,7 +352,7 @@ export default function Buscador({ gondolas = [], productos = [] }: Props) {
                         </g>
                     </svg>
 
-                    {!gondolaDestacada && (
+                    {!productoSeleccionado && (
                         <div className="absolute inset-x-0 top-1/16 -translate-y-1/2 pointer-events-none flex items-center justify-center p-6 text-center">
                             <span className="bg-slate-950/80 border border-slate-800 text-slate-400 text-xs px-3 py-1.5 rounded-full shadow-md backdrop-blur-sm">
                                 👆 Puedes arrastrar o hacer zoom en el mapa

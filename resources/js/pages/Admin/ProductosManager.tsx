@@ -9,8 +9,7 @@ interface Gondola {
 interface Producto {
     id: number;
     nombre: string;
-    gondola_id?: number | null;
-    gondola?: Gondola | null;
+    gondolas?: Gondola[];
 }
 
 interface Props {
@@ -20,7 +19,7 @@ interface Props {
 
 export default function ProductosManager({ productos, gondolas }: Props) {
     const [nombre, setNombre] = useState('');
-    const [gondolaId, setGondolaId] = useState('');
+    const [gondolaIds, setGondolaIds] = useState<number[]>([]);
 
     // 🔍 NUEVO: Estado para el buscador en tiempo real
     const [filtro, setFiltro] = useState('');
@@ -32,13 +31,13 @@ export default function ProductosManager({ productos, gondolas }: Props) {
     const activarEdicion = (prod: Producto) => {
         setEditandoId(prod.id);
         setNombre(prod.nombre);
-        setGondolaId(prod.gondola_id ? String(prod.gondola_id) : '');
+        setGondolaIds(prod.gondolas?.map((g) => g.id) ?? []);
     };
 
     // 🔄 Limpiar formulario y salir del modo edición
     const limpiarFormulario = () => {
         setNombre('');
-        setGondolaId('');
+        setGondolaIds([]);
         setEditandoId(null);
     };
 
@@ -48,7 +47,7 @@ export default function ProductosManager({ productos, gondolas }: Props) {
 
         const payload = {
             nombre: nombre,
-            gondola_id: gondolaId || null,
+            gondola_ids: gondolaIds,
         };
 
         if (editandoId) {
@@ -95,8 +94,8 @@ export default function ProductosManager({ productos, gondolas }: Props) {
 
         return productos.filter((prod) => {
             const coincideNombre = prod.nombre.toLowerCase().includes(busquedaNormalizada);
-            const coincideGondola = prod.gondola?.nombre?.toLowerCase().includes(busquedaNormalizada) ?? false;
-            const perteneceAGondola = prod.gondola_id != null && idsGondolasCoincidentes.has(prod.gondola_id);
+            const coincideGondola = prod.gondolas?.some((g) => g.nombre.toLowerCase().includes(busquedaNormalizada)) ?? false;
+            const perteneceAGondola = prod.gondolas?.some((g) => idsGondolasCoincidentes.has(g.id)) ?? false;
 
             return coincideNombre || coincideGondola || perteneceAGondola;
         });
@@ -108,10 +107,13 @@ export default function ProductosManager({ productos, gondolas }: Props) {
         const grupos = new Map<string, Producto[]>();
 
         for (const prod of productosFiltrados) {
-            const clave = prod.gondola?.nombre ?? 'Sin góndola / Depósito';
-            const lista = grupos.get(clave) ?? [];
-            lista.push(prod);
-            grupos.set(clave, lista);
+            const ubicaciones = prod.gondolas?.length ? prod.gondolas : [{ id: 0, nombre: 'Sin góndola / Depósito' }];
+
+            for (const ubicacion of ubicaciones) {
+                const lista = grupos.get(ubicacion.nombre) ?? [];
+                lista.push(prod);
+                grupos.set(ubicacion.nombre, lista);
+            }
         }
 
         return Array.from(grupos.entries())
@@ -130,10 +132,15 @@ export default function ProductosManager({ productos, gondolas }: Props) {
         >
             <div>
                 <p className="text-sm font-semibold text-white">{prod.nombre}</p>
-                <div className="flex gap-2 mt-1 items-center">
-                    <span className="text-[10px] px-2 py-0.5 bg-slate-800 text-sky-400 border border-sky-900/40 rounded-full font-medium">
-                        📍 {prod.gondola?.nombre || 'Sin góndola / Depósito'}
-                    </span>
+                <div className="flex flex-wrap gap-1.5 mt-1 items-center">
+                    {(prod.gondolas?.length ? prod.gondolas : [{ id: 0, nombre: 'Sin góndola / Depósito' }]).map((gondola) => (
+                        <span
+                            key={`${prod.id}-${gondola.id}`}
+                            className="text-[10px] px-2 py-0.5 bg-slate-800 text-sky-400 border border-sky-900/40 rounded-full font-medium"
+                        >
+                            📍 {gondola.nombre}
+                        </span>
+                    ))}
                 </div>
             </div>
 
@@ -188,23 +195,43 @@ export default function ProductosManager({ productos, gondolas }: Props) {
                                 />
                             </div>
 
-                            {/* Selector Pasillo */}
                             <div className="mb-5">
                                 <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
-                                    Ubicación (Góndola / sector)
+                                    Ubicaciones (Góndolas / sectores)
                                 </label>
-                                <select
-                                    value={gondolaId}
-                                    onChange={(e) => setGondolaId(e.target.value)}
-                                    className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-sm text-white focus:outline-none focus:border-sky-500 cursor-pointer"
-                                >
-                                    <option value="">-- Sin asignar --</option>
-                                    {gondolas.map((g) => (
-                                        <option key={g.id} value={g.id} className="bg-slate-850">
-                                            {g.nombre}
-                                        </option>
-                                    ))}
-                                </select>
+                                <div className="max-h-40 overflow-y-auto rounded-lg border border-slate-600 bg-slate-900 p-2 space-y-1.5">
+                                    {gondolas.length === 0 ? (
+                                        <p className="text-xs text-slate-500 px-1 py-2">No hay góndolas cargadas en el mapa.</p>
+                                    ) : (
+                                        gondolas.map((g) => {
+                                            const seleccionada = gondolaIds.includes(g.id);
+
+                                            return (
+                                                <label
+                                                    key={g.id}
+                                                    className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm cursor-pointer transition-colors ${seleccionada ? 'bg-sky-950/60 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={seleccionada}
+                                                        onChange={() => {
+                                                            setGondolaIds((prev) =>
+                                                                seleccionada
+                                                                    ? prev.filter((id) => id !== g.id)
+                                                                    : [...prev, g.id],
+                                                            );
+                                                        }}
+                                                        className="rounded border-slate-500 bg-slate-900 text-sky-500 focus:ring-sky-500"
+                                                    />
+                                                    <span>{g.nombre}</span>
+                                                </label>
+                                            );
+                                        })
+                                    )}
+                                </div>
+                                <p className="mt-1.5 text-[10px] text-slate-500">
+                                    Podés seleccionar una o más ubicaciones para el mismo producto.
+                                </p>
                             </div>
                                     
                             <div className="flex flex-col gap-2">

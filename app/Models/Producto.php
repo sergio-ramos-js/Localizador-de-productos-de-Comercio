@@ -9,15 +9,12 @@ class Producto extends Model
 {
     use HasFactory;
 
-    // Tabla asociada
     protected $table = 'productos';
 
-    // Columnas que permitimos llenar masivamente desde el formulario
-    protected $fillable = ['nombre', 'gondola_id'];
+    protected $fillable = ['nombre'];
 
-    // Relación inversa: Un producto pertenece a una Góndola
-    public function gondola()
+    public function gondolas()
     {
-        return $this->belongsTo(Gondola::class, 'gondola_id');
+        return $this->belongsToMany(Gondola::class, 'gondola_producto')->withTimestamps();
     }
 }

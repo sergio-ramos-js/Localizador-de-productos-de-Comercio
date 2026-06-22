@@ -20,8 +20,13 @@ class ClienteController extends Controller
 
         return Inertia::render('cliente/Buscador', [
             'gondolas' => $gondolas,
-            // Enviamos los productos con el ID de su góndola para cruzarlos en el mapa
-            'productos' => Producto::select('id', 'nombre', 'gondola_id')->get()
+            'productos' => Producto::with('gondolas:id,nombre')->get()->map(function ($producto) {
+                return [
+                    'id' => $producto->id,
+                    'nombre' => $producto->nombre,
+                    'gondola_ids' => $producto->gondolas->pluck('id')->values(),
+                ];
+            })
         ]);
     }
 }
