@@ -49,8 +49,8 @@ class GondolaController extends Controller
             'color' => $request->color ?? '#475569',
             'posicion_x' => 40, // Aparece centrada
             'posicion_y' => 40,
-            'ancho' => $request->ancho ?? 15,      // Tamaño estándar inicial
-            'alto' => $request->alto ?? 6,
+            'ancho' => $request->ancho ?? 19,      // Tamaño estándar inicial
+            'alto' => $request->alto ?? 8,
         ]);
 
         return redirect()->back(); // Recarga los datos automáticamente con Inertia

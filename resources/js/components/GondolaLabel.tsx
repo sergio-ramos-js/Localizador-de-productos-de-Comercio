@@ -59,6 +59,8 @@ function fitLabelText(text: string, width: number, height: number) {
     };
 }
 
+import { getContrastTextColor } from '@/lib/color';
+
 interface GondolaLabelProps {
     nombre: string;
     x: number;
@@ -66,6 +68,7 @@ interface GondolaLabelProps {
     ancho: number;
     alto: number;
     fill?: string;
+    backgroundColor?: string;
 }
 
 export default function GondolaLabel({
@@ -74,8 +77,10 @@ export default function GondolaLabel({
     y,
     ancho,
     alto,
-    fill = '#ffffff',
+    fill,
+    backgroundColor,
 }: GondolaLabelProps) {
+    const textFill = fill ?? (backgroundColor ? getContrastTextColor(backgroundColor) : '#ffffff');
     const isVertical = alto > ancho;
     const centerX = x + ancho / 2;
     const centerY = y + alto / 2;
@@ -91,7 +96,7 @@ export default function GondolaLabel({
             <text
                 textAnchor="middle"
                 fontSize={fontSize}
-                fill={fill}
+                fill={textFill}
                 fontWeight={600}
                 className="pointer-events-none select-none"
             >

@@ -652,6 +652,7 @@ export default function MapaDesigner({ gondolasIniciales }: Props) {
                                                 y={gondola.posicion_y}
                                                 ancho={gondola.ancho || 20}
                                                 alto={gondola.alto || 8}
+                                                backgroundColor={colorFill}
                                             />
                                         </g>
                                     );

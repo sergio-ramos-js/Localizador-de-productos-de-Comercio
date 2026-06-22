@@ -13,7 +13,7 @@ export default defineConfig({
         strictPort: true,
         cors: true,
         hmr: {
-            host: '192.168.1.111', // ← Tu IP actual
+            host: '192.168.1.115', // ← Tu IP actual
             port: 5371,
             protocol: 'http',
         },

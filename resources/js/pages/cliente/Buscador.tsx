@@ -398,7 +398,7 @@ export default function Buscador({ gondolas = [], productos = [] }: Props) {
                                             y={gondola.posicion_y}
                                             ancho={gAncho}
                                             alto={gAlto}
-                                            fill={esLaBuscada ? '#1c1917' : '#ffffff'}
+                                            backgroundColor={esLaBuscada ? '#fde047' : colorBase}
                                         />
                                     </g>
                                 );

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 
 const STORAGE_KEY = 'mapa-tienda-colores-usados';
-const MAX_HISTORY = 14;
+const MAX_HISTORY = 6;
 const DEFAULT_COLOR = '#475569';
 
 function normalizeHex(color: string): string {

@@ -17,8 +17,8 @@ return new class extends Migration
             $table->string('color', 7)->default('#475569');
             $table->integer('posicion_x')->default(0); // Coordenada entera de 0 a 100
             $table->integer('posicion_y')->default(0); // Coordenada entera de 0 a 100
-            $table->integer('ancho')->default(16);     // Ancho por defecto en unidades de grilla
-            $table->integer('alto')->default(6);       // Alto por defecto en unidades de grilla
+            $table->integer('ancho')->default(19);     // Ancho por defecto en unidades de grilla
+            $table->integer('alto')->default(8);       // Alto por defecto en unidades de grilla
             $table->timestamps();
         });
     }
