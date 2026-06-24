@@ -11,4 +11,6 @@ export type NavItem = {
     href: NonNullable<InertiaLinkProps['href']>;
     icon?: LucideIcon | null;
     isActive?: boolean;
+    /** Abre en nueva pestaña. También se activa automáticamente si href es http(s):// */
+    openInNewTab?: boolean;
 };

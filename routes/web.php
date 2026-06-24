@@ -1,8 +1,9 @@
 <?php
 
+use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GondolaController;
 use App\Http\Controllers\ProductoController;
-use App\Http\Controllers\ClienteController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -14,7 +15,7 @@ Route::get('/buscar', [ClienteController::class, 'index'])->name('cliente.buscar
 // 🔒 RUTAS PROTEGIDAS (Solo entran administradores logueados)
 Route::middleware(['auth', 'verified'])->group(function () {
     
-    Route::inertia('dashboard', 'dashboard')->name('dashboard');
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Panel de Góndolas
     Route::get('/admin/gondolas', [GondolaController::class, 'index'])->name('gondolas.index');

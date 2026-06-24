@@ -1,6 +1,13 @@
 import { Link } from '@inertiajs/react';
-import { BookOpen, FolderGit2, LayoutGrid, QrCode } from 'lucide-react';
-import { Map, Package } from 'lucide-react';
+import {
+    BookOpen,
+    FolderGit2,
+    LayoutGrid,
+    Map,
+    Package,
+    QrCode,
+    Search,
+} from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -37,6 +44,12 @@ const mainNavItems: NavItem[] = [
         title: 'Generador QR',
         href: '/admin/qr',
         icon: QrCode,
+    },
+    {
+        title: 'Ir al Buscador Web',
+        href: '/buscar',
+        icon: Search,
+        openInNewTab: true,
     },
 ];
 
