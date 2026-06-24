@@ -1,7 +1,7 @@
-import GondolaLabel from '@/components/GondolaLabel';
-import { formatearLista } from '@/lib/format';
 import { Head } from '@inertiajs/react';
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import GondolaLabel from '@/components/GondolaLabel';
+import { formatearLista } from '@/lib/format';
 
 interface Gondola {
     id: number;
@@ -237,16 +237,16 @@ export default function Buscador({ gondolas = [], productos = [] }: Props) {
                 {productoSeleccionado && (
                     <div className="bg-sky-950/40 border border-sky-900/50 px-3 py-2.5 rounded-xl">
                         {nombresGondolasUbicacion.length > 0 ? (
-                            <p className="text-sm text-slate-100 leading-relaxed">
-                                <span className="font-bold text-white">{productoSeleccionado.nombre}</span>
-                                {' '}se encuentra en{' '}
-                                <span className="font-semibold text-sky-300">
+                            <p className="text-xs text-slate-100 leading-relaxed">
+                                <span className="font-bold text-white mr-1">{productoSeleccionado.nombre}</span>
+                                {' '}se encuentra en:{' '}
+                                <span className="font-semibold text-sky-300 ml-1">
                                     {formatearLista(nombresGondolasUbicacion)}
                                 </span>
                                 .
                             </p>
                         ) : (
-                            <p className="text-sm text-amber-300 leading-relaxed">
+                            <p className="text-xs text-amber-300 leading-relaxed">
                                 <span className="font-bold text-white">{productoSeleccionado.nombre}</span>
                                 {' '}no tiene ubicaciones asignadas en el mapa.
                             </p>

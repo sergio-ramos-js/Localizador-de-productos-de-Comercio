@@ -1,8 +1,9 @@
-import ColorPickerWithHistory from '@/components/ColorPickerWithHistory';
-import GondolaLabel from '@/components/GondolaLabel';
 import { Head, router } from '@inertiajs/react';
+import { RefreshCw } from 'lucide-react';
 import React, { useState, useEffect, useRef } from 'react';
 import { useCallback } from 'react';
+import ColorPickerWithHistory from '@/components/ColorPickerWithHistory';
+import GondolaLabel from '@/components/GondolaLabel';
 
 interface Gondola {
     id: number;
@@ -469,7 +470,8 @@ export default function MapaDesigner({ gondolasIniciales }: Props) {
                                         }}
                                         className="w-full py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
                                     >
-                                        ↔ Rotar 90° (Ancho ↔ Alto)
+                                        Rotar 90° 
+                                        <RefreshCw size={'18'} />
                                     </button>
 
                                     {editandoId && (
